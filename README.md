@@ -192,4 +192,3 @@ Run the command from within a git repository or use `-d` to specify one.
 ## License
 
 MIT
-# azure-copilot-sdlc
