@@ -1,57 +1,67 @@
-using System.Diagnostics;
-using System.Text.Json;
-using System.Text.RegularExpressions;
+using Copiloter.CLI.Services.Interfaces;
 using Copiloter.CLI.Utilities;
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace Copiloter.CLI.Services;
 
 /// <summary>
 /// Service to configure Model Context Protocol (MCP) servers
 /// </summary>
-public class McpConfigurationService
+public class McpConfigurationService : IMcpConfigurationService
 {
-    private readonly string _workingDirectory;
+    private readonly ConcurrentDictionary<string, string> _cachedEnvironmentVariables;
 
-    public McpConfigurationService(string workingDirectory)
+    public McpConfigurationService()
     {
-        _workingDirectory = workingDirectory;
+        _cachedEnvironmentVariables = new ConcurrentDictionary<string, string>();
     }
 
     /// <summary>
     /// Get environment variables configuration for MCP
     /// Prompts for missing PATs and sets them in current session
+    /// Uses cached values if already retrieved
     /// </summary>
-    public Dictionary<string, string> GetEnvironmentVariables()
+    public Dictionary<string, string> GetEnvironmentVariables(string directory)
     {
+        // Check if we have cached variables already
+        if (_cachedEnvironmentVariables.Count > 0)
+        {
+            return new Dictionary<string, string>(_cachedEnvironmentVariables);
+        }
+
         var envVars = new Dictionary<string, string>();
 
         // Get or prompt for Azure DevOps PAT
-        var azureDevOpsPat = Environment.GetEnvironmentVariable("AZURE_DEVOPS_PAT");
+        var azureDevOpsPat = Environment.GetEnvironmentVariable("AZURE_DEVOPS_PAT", EnvironmentVariableTarget.User);
         if (string.IsNullOrWhiteSpace(azureDevOpsPat))
         {
             azureDevOpsPat = ConsoleHelper.PromptSecret("Azure DevOps PAT not found. Please enter your PAT:");
-            Environment.SetEnvironmentVariable("AZURE_DEVOPS_PAT", azureDevOpsPat);
-            ConsoleHelper.ShowSuccess("PAT stored for this session.");
+            Environment.SetEnvironmentVariable("AZURE_DEVOPS_PAT", azureDevOpsPat, EnvironmentVariableTarget.User);
+            ConsoleHelper.ShowSuccess("PAT stored for user.");
             ConsoleHelper.ShowInfo("To persist across sessions, add to your shell profile (~/.zshrc or ~/.bashrc): export AZURE_DEVOPS_PAT=\"your-pat\"");
         }
         envVars["AZURE_DEVOPS_PAT"] = azureDevOpsPat;
+        _cachedEnvironmentVariables.TryAdd("AZURE_DEVOPS_PAT", azureDevOpsPat);
 
         // Get or prompt for GitHub PAT
-        var githubPat = Environment.GetEnvironmentVariable("GITHUB_PAT");
+        var githubPat = Environment.GetEnvironmentVariable("GITHUB_PAT", EnvironmentVariableTarget.User);
         if (string.IsNullOrWhiteSpace(githubPat))
         {
             githubPat = ConsoleHelper.PromptSecret("GitHub PAT not found. Please enter your PAT:");
-            Environment.SetEnvironmentVariable("GITHUB_PAT", githubPat);
-            ConsoleHelper.ShowSuccess("PAT stored for this session.");
+            Environment.SetEnvironmentVariable("GITHUB_PAT", githubPat, EnvironmentVariableTarget.User);
+            ConsoleHelper.ShowSuccess("PAT stored for user.");
             ConsoleHelper.ShowInfo("To persist across sessions, add to your shell profile (~/.zshrc or ~/.bashrc): export GITHUB_PAT=\"your-pat\"");
         }
         envVars["GITHUB_PAT"] = githubPat;
+        _cachedEnvironmentVariables.TryAdd("GITHUB_PAT", githubPat);
 
         // Get or auto-detect Azure DevOps organization
         var org = Environment.GetEnvironmentVariable("AZURE_DEVOPS_ORG");
         if (string.IsNullOrWhiteSpace(org))
         {
-            org = ExtractOrgFromGitRemote();
+            org = ExtractOrgFromGitRemote(directory);
             if (!string.IsNullOrWhiteSpace(org))
             {
                 ConsoleHelper.ShowInfo($"Auto-detected Azure DevOps organization: {org}");
@@ -62,6 +72,7 @@ public class McpConfigurationService
         if (!string.IsNullOrWhiteSpace(org))
         {
             envVars["AZURE_DEVOPS_ORG"] = org;
+            _cachedEnvironmentVariables.TryAdd("AZURE_DEVOPS_ORG", org);
         }
 
         return envVars;
@@ -70,7 +81,7 @@ public class McpConfigurationService
     /// <summary>
     /// Create filesystem MCP configuration
     /// </summary>
-    public object CreateFilesystemMcpConfig()
+    public object CreateFilesystemMcpConfig(string directory)
     {
         return new
         {
@@ -79,7 +90,7 @@ public class McpConfigurationService
             {
                 "-y",
                 "@modelcontextprotocol/server-filesystem",
-                _workingDirectory
+                directory
             }
         };
     }
@@ -114,12 +125,17 @@ public class McpConfigurationService
     {
         try
         {
+            // On Windows, we need to use shell execute to find npx (Node.js command)
+            // On Unix-like systems, the PATH will find it
+            var isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+                System.Runtime.InteropServices.OSPlatform.Windows);
+            
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "npx",
-                    Arguments = "--version",
+                    FileName = isWindows ? "cmd.exe" : "npx",
+                    Arguments = isWindows ? "/c npx --version" : "--version",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -141,7 +157,7 @@ public class McpConfigurationService
     /// <summary>
     /// Extract Azure DevOps organization from git remote URL
     /// </summary>
-    private string? ExtractOrgFromGitRemote()
+    private string? ExtractOrgFromGitRemote(string directory)
     {
         try
         {
@@ -151,7 +167,7 @@ public class McpConfigurationService
                 {
                     FileName = "git",
                     Arguments = "remote get-url origin",
-                    WorkingDirectory = _workingDirectory,
+                    WorkingDirectory = directory,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -195,7 +211,7 @@ public class McpConfigurationService
     /// <summary>
     /// Extract Azure DevOps project from git remote URL
     /// </summary>
-    public string? ExtractProjectFromGitRemote()
+    public string? ExtractProjectFromGitRemote(string directory)
     {
         try
         {
@@ -205,7 +221,7 @@ public class McpConfigurationService
                 {
                     FileName = "git",
                     Arguments = "remote get-url origin",
-                    WorkingDirectory = _workingDirectory,
+                    WorkingDirectory = directory,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,

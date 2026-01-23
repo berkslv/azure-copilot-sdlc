@@ -1,15 +1,16 @@
 using Copiloter.CLI.Models;
+using Copiloter.CLI.Services.Interfaces;
 using Copiloter.CLI.Utilities;
+using System.Collections.Concurrent;
 
 namespace Copiloter.CLI.Services;
 
 /// <summary>
 /// Service to discover and load custom Copilot agent markdown files
 /// </summary>
-public class AgentDiscoveryService
+public class AgentDiscoveryService : IAgentDiscoveryService
 {
-    private readonly string _workingDirectory;
-    private readonly Dictionary<string, AgentConfig> _cachedAgents = new();
+    private readonly ConcurrentDictionary<string, AgentConfig> _cachedAgents = new();
 
     // Search paths in priority order
     private readonly string[] _searchPaths = new[]
@@ -20,18 +21,13 @@ public class AgentDiscoveryService
         "."
     };
 
-    public AgentDiscoveryService(string workingDirectory)
-    {
-        _workingDirectory = workingDirectory;
-    }
-
     /// <summary>
     /// Discover and load an agent by name
     /// </summary>
     /// <param name="agentName">Name of the agent (e.g., "planner", "developer", "reviewer")</param>
     /// <returns>Agent configuration</returns>
     /// <exception cref="FileNotFoundException">If agent file is not found</exception>
-    public AgentConfig DiscoverAgent(string agentName)
+    public AgentConfig DiscoverAgent(string agentName, string directory)
     {
         // Check cache first
         if (_cachedAgents.TryGetValue(agentName, out var cached))
@@ -45,7 +41,7 @@ public class AgentDiscoveryService
         // Search in priority order
         foreach (var searchPath in _searchPaths)
         {
-            var fullPath = Path.Combine(_workingDirectory, searchPath, fileName);
+            var fullPath = Path.Combine(directory, searchPath, fileName);
             
             if (File.Exists(fullPath))
             {
@@ -56,7 +52,7 @@ public class AgentDiscoveryService
         if (foundPaths.Count == 0)
         {
             throw new FileNotFoundException(
-                $"Agent '{agentName}' not found. Searched in: {string.Join(", ", _searchPaths.Select(p => Path.Combine(_workingDirectory, p)))}",
+                $"Agent '{agentName}' not found. To get the best results, first create a specialized agent for the tasks. Searched in: {string.Join(", ", _searchPaths.Select(p => Path.Combine(directory, p)))}",
                 fileName
             );
         }
@@ -89,11 +85,11 @@ public class AgentDiscoveryService
     /// <summary>
     /// Check if an agent exists without loading it
     /// </summary>
-    public bool AgentExists(string agentName)
+    public bool AgentExists(string agentName, string directory)
     {
         try
         {
-            DiscoverAgent(agentName);
+            DiscoverAgent(agentName, directory);
             return true;
         }
         catch (FileNotFoundException)
@@ -105,13 +101,13 @@ public class AgentDiscoveryService
     /// <summary>
     /// Get all available agent names in the working directory
     /// </summary>
-    public List<string> GetAvailableAgents()
+    public List<string> GetAvailableAgents(string directory)
     {
         var agents = new HashSet<string>();
 
         foreach (var searchPath in _searchPaths)
         {
-            var fullPath = Path.Combine(_workingDirectory, searchPath);
+            var fullPath = Path.Combine(directory, searchPath);
             
             if (!Directory.Exists(fullPath))
                 continue;

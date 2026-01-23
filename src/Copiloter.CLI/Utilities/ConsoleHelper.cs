@@ -12,7 +12,7 @@ public static class ConsoleHelper
     /// </summary>
     public static void ShowError(string message)
     {
-        AnsiConsole.MarkupLine($"[red]Error:[/red] {Markup.Escape(message)}");
+        AnsiConsole.MarkupLine($"[red]Error:[/] {Markup.Escape(message)}");
     }
 
     /// <summary>
@@ -20,7 +20,7 @@ public static class ConsoleHelper
     /// </summary>
     public static void ShowWarning(string message)
     {
-        AnsiConsole.MarkupLine($"[yellow]Warning:[/yellow] {Markup.Escape(message)}");
+        AnsiConsole.MarkupLine($"[yellow]Warning:[/] {Markup.Escape(message)}");
     }
 
     /// <summary>
@@ -28,7 +28,7 @@ public static class ConsoleHelper
     /// </summary>
     public static void ShowInfo(string message)
     {
-        AnsiConsole.MarkupLine($"[blue]Info:[/blue] {Markup.Escape(message)}");
+        AnsiConsole.MarkupLine($"[blue]Info:[/] {Markup.Escape(message)}");
     }
 
     /// <summary>
@@ -36,7 +36,7 @@ public static class ConsoleHelper
     /// </summary>
     public static void ShowSuccess(string message)
     {
-        AnsiConsole.MarkupLine($"[green]{Markup.Escape(message)}[/green]");
+        AnsiConsole.MarkupLine($"[green]{Markup.Escape(message)}[/]");
     }
 
     /// <summary>
@@ -107,7 +107,7 @@ public static class ConsoleHelper
             if (cancellationToken.IsCancellationRequested)
                 break;
 
-            AnsiConsole.MarkupLine($"[yellow]{Markup.Escape(message)} in {i} seconds... (Press Ctrl+C to cancel)[/yellow]");
+            AnsiConsole.MarkupLine($"[yellow]{Markup.Escape(message)} in {i} seconds... (Press Ctrl+C to cancel)[/]");
             await Task.Delay(1000, cancellationToken);
             
             if (i > 1)
