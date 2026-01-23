@@ -12,7 +12,38 @@ Before you start, ensure you have:
 - ✅ Access to an Azure DevOps project
 - ✅ GitHub Copilot subscription
 
-## 2. Environment Setup
+## 2. First-Time Setup
+
+### Configure Credentials
+
+The tool will automatically prompt you for credentials on first run. Just run any command and follow the prompts:
+
+```bash
+cd src/Copiloter.CLI
+dotnet run plan 1234
+```
+
+You'll be prompted for:
+- **Azure DevOps PAT**: Personal Access Token (requires: Work Items, Code, Pull Requests permissions)
+- **GitHub PAT**: Personal Access Token (requires: Copilot access)
+- **Azure DevOps Organization**: Your org name (auto-detected from git remote if possible)
+
+The credentials are saved to `~/.azure-copilot` (Linux/macOS) or `C:\Users\<username>\.azure-copilot` (Windows).
+
+### Manual Configuration (Optional)
+
+You can also manually create the configuration file:
+
+**Linux/macOS**: `~/.azure-copilot`
+**Windows**: `C:\Users\<username>\.azure-copilot`
+
+```json
+{
+  "azureDevOpsPat": "your-azure-devops-pat-here",
+  "githubPat": "your-github-pat-here",
+  "azureDevOpsOrg": "your-organization-name"
+}
+```
 
 ### Get Your Personal Access Tokens
 
@@ -28,24 +59,6 @@ Before you start, ensure you have:
 1. Go to https://github.com/settings/tokens
 2. Create new classic token with `copilot` scope
 3. Or use fine-grained token with Copilot access
-
-### Set Environment Variables
-
-```bash
-# Required
-export AZURE_DEVOPS_PAT="your-azure-devops-pat-here"
-export GITHUB_PAT="your-github-pat-here"
-
-# Optional - will auto-detect from git remote
-export AZURE_DEVOPS_ORG="your-organization-name"
-```
-
-**Make them permanent** (add to `~/.zshrc` or `~/.bashrc`):
-```bash
-echo 'export AZURE_DEVOPS_PAT="your-pat"' >> ~/.zshrc
-echo 'export GITHUB_PAT="your-pat"' >> ~/.zshrc
-source ~/.zshrc
-```
 
 ## 3. Install MCP Servers
 

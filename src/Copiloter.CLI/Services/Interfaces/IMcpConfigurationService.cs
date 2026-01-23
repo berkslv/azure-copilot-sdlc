@@ -1,3 +1,5 @@
+using GitHub.Copilot.SDK;
+
 namespace Copiloter.CLI.Services.Interfaces;
 
 /// <summary>
@@ -14,12 +16,12 @@ public interface IMcpConfigurationService
     /// <summary>
     /// Create filesystem MCP configuration
     /// </summary>
-    object CreateFilesystemMcpConfig(string directory);
+    McpLocalServerConfig CreateFilesystemMcpConfig(string directory);
 
     /// <summary>
     /// Create Azure DevOps MCP configuration
     /// </summary>
-    object CreateAzureDevOpsMcpConfig(string organization, string pat);
+    McpLocalServerConfig CreateAzureDevOpsMcpConfig(string organization, string pat);
 
     /// <summary>
     /// Validate that npx is available

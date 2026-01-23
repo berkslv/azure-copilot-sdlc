@@ -25,17 +25,40 @@ dotnet build
 
 ## Configuration
 
-### Environment Variables
+### Credentials Configuration
 
-Set the following environment variables:
+On first run, the tool will prompt you for the required credentials and save them to a `.azure-copilot` configuration file in your home directory.
+
+Required credentials:
+- **Azure DevOps PAT**: Personal Access Token with work items read/write permissions
+- **GitHub PAT**: Personal Access Token for GitHub Copilot SDK
+- **Azure DevOps Organization**: Your organization name (auto-detected from git remote if possible)
+
+The configuration file is stored at:
+- **Linux/macOS**: `~/.azure-copilot`
+- **Windows**: `C:\Users\<username>\.azure-copilot`
+
+You can also manually create or edit the configuration file:
+
+```json
+{
+  "azureDevOpsPat": "your-azure-devops-pat",
+  "githubPat": "your-github-pat",
+  "azureDevOpsOrg": "your-organization"
+}
+```
+
+**Security Note**: Keep this file secure and never commit it to version control. Add `.azure-copilot` to your `.gitignore`.
+
+### Legacy Environment Variables (Optional)
+
+The tool still supports environment variables, but the `.azure-copilot` file is the preferred method:
 
 ```bash
 export AZURE_DEVOPS_PAT="your-azure-devops-pat"
 export AZURE_DEVOPS_ORG="your-organization"  # Optional - auto-detected from git remote
 export GITHUB_PAT="your-github-pat"          # For GitHub Copilot SDK
 ```
-
-Add to your shell profile (~/.zshrc or ~/.bashrc) to persist across sessions.
 
 ### Custom Agents
 

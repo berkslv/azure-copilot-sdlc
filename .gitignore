@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# Azure Copilot configuration (contains sensitive PATs)
+.azure-copilot
+
 # User-specific files
 *.rsuser
 *.suo

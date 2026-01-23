@@ -20,7 +20,7 @@ public class CopilotAgentService(IMcpConfigurationService mcpService) : ICopilot
     /// <param name="timeout">Timeout for agent execution (default 5 minutes)</param>
     /// <returns>Agent response</returns>
     public async Task<string> ExecuteAgentAsync(
-        AgentConfig agent, 
+        AgentConfig agent,
         string systemPrompt,
         string directory,
         TimeSpan? timeout = null)
@@ -52,37 +52,61 @@ public class CopilotAgentService(IMcpConfigurationService mcpService) : ICopilot
 
         try
         {
-            ConsoleHelper.ShowInfo("Connecting to Copilot server at localhost:4321...");
+            ConsoleHelper.ShowInfo("Connecting to Copilot");
             await using var client = new CopilotClient(new CopilotClientOptions
             {
-                CliUrl = "localhost:4321",
-                UseStdio = false
+                //CliUrl = "localhost:4321",
+                UseStdio = true,
+                // Environment = new Dictionary<string, string>()
+                // {
+                //     { "ADO_MCP_AUTH_TOKEN", envVars["AZURE_DEVOPS_PAT"] }
+                // }
             });
 
             // Create session with MCP servers and custom agent
-            ConsoleHelper.ShowInfo("Initializing session with MCP servers...");
             await using var session = await client.CreateSessionAsync(new SessionConfig
             {
-                McpServers = mcpServers,
-                Streaming = false,
-                CustomAgents = new List<CustomAgentConfig>
-                {
-                    new CustomAgentConfig
-                    {
-                        Name = agent.Name,
-                        Prompt = agent.Content,
-                    }
-                }
+                Model = "gpt-5-mini",
+                // McpServers = mcpServers,
+                Streaming = true,
+                // CustomAgents = new List<CustomAgentConfig>
+                // {
+                //     new CustomAgentConfig
+                //     {
+                //         Name = agent.Name,
+                //         Prompt = agent.Content
+                //     }
+                // },
             }, cts.Token);
 
             // Collect assistant messages
             var responseBuilder = new System.Text.StringBuilder();
             session.On(evt =>
             {
+                if (evt is UserMessageEvent userMessageEvent)
+                {
+                    Console.Write(userMessageEvent.Data.Content);
+                }
+                if (evt is ToolExecutionStartEvent toolExecutionStartEvent)
+                {
+                    Console.Write(toolExecutionStartEvent.Data.ToolName);
+                }
+                if (evt is ToolExecutionCompleteEvent toolExecutionCompleteEvent)
+                {
+                    Console.Write(toolExecutionCompleteEvent.Data.Result?.Content);
+                }
+                if (evt is AssistantMessageDeltaEvent deltaEvent)
+                {
+                    Console.Write(deltaEvent.Data.DeltaContent);
+                }
                 if (evt is AssistantMessageEvent assistantMsg && assistantMsg.Data?.Content != null)
                 {
                     responseBuilder.AppendLine(assistantMsg.Data.Content);
                     Console.WriteLine(assistantMsg.Data.Content);
+                }
+                if (evt is SessionErrorEvent errorEvent)
+                {
+                    Console.Write(errorEvent.Data.Message);
                 }
             });
 
@@ -91,8 +115,8 @@ public class CopilotAgentService(IMcpConfigurationService mcpService) : ICopilot
             // Send message and wait for completion
             await session.SendAndWaitAsync(new MessageOptions
             {
-                Prompt = fullPrompt,
-            });
+                Prompt = "say hello",
+            }, timeout, cts.Token);
 
             var response = responseBuilder.ToString();
             if (string.IsNullOrWhiteSpace(response))
