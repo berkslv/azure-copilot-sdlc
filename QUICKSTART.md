@@ -170,7 +170,7 @@ mkdir -p docs/agents
 # Check your token hasn't expired
 # Verify scopes include Work Items, Code, Pull Requests
 # Re-export environment variable
-export AZURE_DEVOPS_PAT="new-token"
+export ADO_MCP_AUTH_TOKEN="new-token"
 ```
 
 ### "Failed to execute agent"

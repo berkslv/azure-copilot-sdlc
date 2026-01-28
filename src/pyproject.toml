@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "azure-copilot-sdlc"
+version = "0.1.0"
+description = "Azure DevOps work item lifecycle automation using GitHub Copilot CLI"
+requires-python = ">=3.12"
+dependencies = [
+    "typer>=0.21.1",
+    "rich>=13.0.0",
+    "python-dotenv>=1.2.1",
+    "requests>=2.31.0",
+    "gitpython>=3.1.40",
+]
+
+[project.scripts]
+azure-copilot-sdlc = "cli:cli"
+
+[tool.setuptools]
+packages = ["commands", "services", "models", "utilities"]
+py-modules = ["cli"]
+
+[dependency-groups]
+dev = ["pyinstaller>=6.0.0"]

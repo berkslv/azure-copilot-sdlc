@@ -1,8 +1,0 @@
-﻿{
-  "profiles": {
-    "Copiloter.CLI": {
-      "commandName": "Project",
-      "commandLineArgs": "plan 296920 -d /Users/berkslv/Documents/project/VDF-Fleet"
-    }
-  }
-}
