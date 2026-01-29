@@ -50,22 +50,36 @@ In your target repository, create these files in `.github/agents/` (or `agents/`
 
 ```bash
 uv run azure-copilot-sdlc plan 123 -d /path/to/repo
+uv run azure-copilot-sdlc plan 123 -d /path/to/repo -m gpt-4
 ```
 
 Generates an implementation plan and saves it as a comment to the work item.
+
+**Options:**
+- `-m, --model`: LLM model to use (e.g., `gpt-5-mini`, `gpt-4`, `gpt-4-turbo`). Defaults to `gpt-5-mini`.
 
 ### Develop a Feature
 
 ```bash
 uv run azure-copilot-sdlc develop 123 -d /path/to/repo
+uv run azure-copilot-sdlc develop 123 -d /path/to/repo -m gpt-4
+uv run azure-copilot-sdlc develop 123 -d /path/to/repo -r -m gpt-4
 ```
 
 Creates a feature branch, implements the code, and creates a pull request.
+
+**Options:**
+- `-r, --with-review`: Run code review after development
+- `-m, --model`: LLM model to use (e.g., `gpt-5-mini`, `gpt-4`, `gpt-4-turbo`). Defaults to `gpt-5-mini`.
 
 ### Review Code
 
 ```bash
 uv run azure-copilot-sdlc review 123 -d /path/to/repo
+uv run azure-copilot-sdlc review 123 -d /path/to/repo -m gpt-4
 ```
 
 Performs AI code review with automated fixes for critical issues.
+
+**Options:**
+- `-m, --model`: LLM model to use (e.g., `gpt-5-mini`, `gpt-4`, `gpt-4-turbo`). Defaults to `gpt-5-mini`.

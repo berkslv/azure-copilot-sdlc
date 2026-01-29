@@ -1,7 +1,5 @@
 """Plan command implementation"""
 
-from pathlib import Path
-from typing import Optional
 from datetime import datetime
 import typer
 from services import (
@@ -26,12 +24,13 @@ def build_combined_plan_prompt(work_item_id: int, project: str) -> str:
 Required Plan Structure:
 1. # COPILOT PLAN (top-level header)
 2. ## User Story - What the user wants, the story of the work item
-3. ## Technical Implementation - Search project, find correct places for development, create abstract development plan
+3. ## Questions - Clarifying questions about the work item
+4. ## Technical Implementation - Search project, find correct places for development, create abstract development plan
    - Include file paths and class names. Method signatures are helpful but not required.
    - Mid-level detail: architectural components, key classes/files to modify, new files to create, dependencies to add.
-4. ## Acceptance Criteria - Detailed, testable criteria
+5. ## Acceptance Criteria - Detailed, testable criteria
    - Use testable/measurable criteria. Given-When-Then format is preferred but not required.
-5. ## Test Paths - Manual testing steps to verify the requirement
+6. ## Test Paths - Manual testing steps to verify the requirement
    - Focus on manual testing steps. Automated test suggestions can be mentioned briefly.
 
 Instructions:
@@ -52,7 +51,8 @@ Instructions:
 
 def plan(
     work_item_id: int = typer.Argument(..., help="Azure DevOps work item ID"),
-    directory: str = typer.Option(".", "-d", "--directory", help="Working directory")
+    directory: str = typer.Option(".", "-d", "--directory", help="Working directory"),
+    model: str = typer.Option(None, "-m", "--model", help="LLM model to use (e.g., gpt-5-mini, gpt-4)")
 ):
     """
     Generate Copilot plan for a work item.
@@ -81,7 +81,7 @@ def plan(
         )
         
         # Generate and save plan in one execution
-        copilot = CopilotAgentService(work_dir)
+        copilot = CopilotAgentService(work_dir, model=model)
         prompt = build_combined_plan_prompt(work_item_id, project)
         
         success, output = copilot.execute_agent(

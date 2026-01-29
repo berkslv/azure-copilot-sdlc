@@ -14,14 +14,16 @@ from models import AgentConfig
 class CopilotAgentService:
     """Execute AI agents via Copilot CLI"""
     
-    def __init__(self, working_directory: Path):
+    def __init__(self, working_directory: Path, model: Optional[str] = None):
         """
         Initialize service.
         
         Args:
             working_directory: Working directory for agent execution
+            model: Optional model parameter (e.g., 'gpt-5-mini', 'gpt-4', etc.)
         """
         self.working_directory = Path(working_directory).resolve()
+        self.model = model or "gpt-5-mini"
     
     def _check_copilot_available(self) -> bool:
         """Check if copilot CLI is available"""
@@ -40,7 +42,8 @@ class CopilotAgentService:
         self,
         agent: AgentConfig,
         prompt: str,
-        timeout: int = 300
+        timeout: int = 300,
+        model: Optional[str] = None
     ) -> tuple[bool, str]:
         """
         Execute an agent with given prompt.
@@ -51,10 +54,10 @@ class CopilotAgentService:
         3. Execute copilot CLI with MCP servers
         
         Args:
-            agent_path: Path to agent markdown file
+            agent: AgentConfig object with agent information
             prompt: User prompt/request
-            system_prompt: Optional system prompt to prepend
             timeout: Timeout in seconds (default: 5 minutes)
+            model: Optional model override (e.g., 'gpt-5-mini', 'gpt-4', etc.)
         
         Returns:
             Tuple of (success, output)
@@ -72,11 +75,12 @@ class CopilotAgentService:
             mcp_config = mcp_service.get_mcp_config()
             
             # Execute copilot with streaming output (UTF-8 decoding)
+            model_to_use = model or self.model
             cmd = [
                 "copilot",
                 "--additional-mcp-config", mcp_config,
                 "--yolo",
-                "--model", "gpt-5-mini",
+                "--model", model_to_use,
                 "--prompt", prompt,
             ]
 

@@ -1,7 +1,6 @@
 """Develop command implementation"""
 
-from pathlib import Path
-from typing import Optional
+from datetime import datetime
 import typer
 from services import (
     AgentDiscoveryService,
@@ -12,12 +11,48 @@ from utilities import (
     console_helper,
     validators
 )
+from utilities.config import get_env_variable
+
+def build_develop_prompt(work_item_id: int, project: str, branch_name: str) -> str:
+    """Build comprehensive prompt for development execution"""
+    timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    return f"""You are a senior software developer. Your task is to implement the feature for work item #{work_item_id}.
+
+Instructions:
+1. Analyze the COPILOT PLAN comment on work item #{work_item_id} in project "{project}" (retrieve from Azure DevOps)
+2. Follow the Technical Implementation section to guide your development
+3. Write clean, maintainable code following project conventions
+4. Create unit tests covering all acceptance criteria
+5. Ensure code builds successfully
+6. Run tests and verify all pass
+7. Commit changes to branch '{branch_name}' with message: "feat: #{work_item_id} implementation"
+
+Requirements:
+- Follow the technical implementation plan precisely
+- Write tests as you implement features
+- Include error handling and validation
+- Ensure code is well-documented with comments where needed
+- Verify all acceptance criteria are met
+- Keep commits atomic and meaningful
+
+After implementation:
+1. Run full test suite
+2. Verify build succeeds
+3. Ensure all acceptance criteria are met
+4. Stage and commit changes (commit message: "feat: #{work_item_id} implementation")
+6. Push changes to origin
+5. Create PR in Azure devops for review using mcp
+
+Be thorough and ensure high quality implementation.
+Generated on {timestamp} UTC
+"""
 
 
 def develop(
     work_item_id: int = typer.Argument(..., help="Azure DevOps work item ID"),
     directory: str = typer.Option(".", "-d", "--directory", help="Working directory"),
-    with_review: bool = typer.Option(False, "-r", "--with-review", help="Run review after development")
+    with_review: bool = typer.Option(False, "-r", "--with-review", help="Run review after development"),
+    model: str = typer.Option(None, "-m", "--model", help="LLM model to use (e.g., gpt-5-mini, gpt-4)")
 ):
     """
     Implement feature based on work item plan.
@@ -66,30 +101,21 @@ def develop(
         # Discover agent
         discovery = AgentDiscoveryService(work_dir)
         agent = discovery.discover_agent("develop")
-        if not agent:
-            raise ValueError("Developer agent not found")
-        
-        # Configure MCP
-        mcp_config = McpConfigurationService(work_dir).get_mcp_config()
-        
-        # Execute agent
-        copilot = CopilotAgentService(mcp_config, work_dir)
-        
-        system_prompt = (
-            "You are a senior software developer. Implement the feature based on the "
-            "technical implementation plan. Write clean, maintainable code following "
-            "project conventions. Include unit tests covering acceptance criteria."
+
+        # Get Azure DevOps project name
+        project = get_env_variable(
+            "AZURE_DEVOPS_PROJECT",
+            prompt_text="Enter Azure DevOps project name:",
+            password=False
         )
         
-        prompt = (
-            f"Implement work item #{item_id} based on the plan and technical specifications. "
-            f"Write clean code with tests. After implementation, build and run tests to verify."
-        )
+        # Execute agent with comprehensive prompt
+        copilot = CopilotAgentService(work_dir, model=model)
+        prompt = build_develop_prompt(item_id, project, branch_name)
         
         success, output = copilot.execute_agent(
-            agent.path,
-            prompt,
-            system_prompt,
+            agent=agent,
+            prompt=prompt,
             timeout=600
         )
         
@@ -97,27 +123,6 @@ def develop(
             raise ValueError(f"Implementation failed: {output}")
         
         console_helper.show_success("Implementation completed")
-        
-        # Commit changes
-        # TODO: Implement build/test cycle before commit
-        message = f"feat: #{item_id} implementation"
-        if not git.commit(message):
-            raise ValueError("Failed to commit changes")
-        
-        # Push branch
-        if not git.push(branch_name):
-            raise ValueError("Failed to push branch")
-        
-        # Create PR
-        # TODO: Implement Azure DevOps PR creation
-        console_helper.show_success(f"Ready to create PR for {branch_name}")
-        console_helper.show_info("Note: PR creation not yet implemented")
-        
-        # Optional review
-        if with_review:
-            console_helper.show_info("Starting review stage...")
-            # TODO: Call review command
-            raise NotImplementedError("Review stage not yet implemented")
         
     except Exception as e:
         console_helper.show_error(str(e))
