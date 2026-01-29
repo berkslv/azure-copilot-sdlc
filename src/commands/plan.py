@@ -46,6 +46,7 @@ Instructions:
    - Add timestamp: 'Generated on {timestamp} UTC'
    - Update work item state to 'Active' (or 'In Progress' or 'Committed' if 'Active' is not valid)
    - Do NOT change assigned user, iteration, or other fields just make comment
+   - Write in valid Markdown format, including headers, bullet points, and code blocks as needed. respect to space and formatting. DO NOT write everything in one-line. check formatting after you submit the comment.
 """
 
 

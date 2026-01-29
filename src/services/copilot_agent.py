@@ -84,7 +84,7 @@ class CopilotAgentService:
                 "--prompt", prompt,
             ]
 
-            if agent.name:
+            if agent and agent.name:
                 cmd.extend(["--agent", agent.name])
 
             # Debug: Print command as runnable one-liner
